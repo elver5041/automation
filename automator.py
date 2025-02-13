@@ -9,13 +9,14 @@ from fastapi.responses import RedirectResponse
 from contextlib import asynccontextmanager
 
 from process_router import check_loading_processes, router as process_router
+from hardware_router import router as hardware_router
+import uvicorn
 
-
-
-
+routers = [hardware_router, process_router]
 callable_tasks = [check_loading_processes]
 
-async def process_task():
+
+async def process_periodic_tasks():
     while True:
         await asyncio.sleep(1)
         for func in callable_tasks:
@@ -24,7 +25,7 @@ async def process_task():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    task = asyncio.create_task(process_task())
+    task = asyncio.create_task(process_periodic_tasks())
     try:
         yield
     finally:
@@ -45,27 +46,9 @@ app.add_middleware(
 def root():
     return RedirectResponse(url="/docs")
 
-@app.get("/shutdown")
-def shutdown():
-    os.system("shutdown /s /t 0")
-    return "computer shut down sucesssfully"
-
-
-@app.get("/monitors/off")
-def sleep_monitors():
-    ctypes.windll.user32.PostMessageW(0xFFFF, 0x0112, 0xF170, 2)
- 
-
-@app.get("/monitors/on")
-def wake_monitors():
-    ctypes.windll.user32.mouse_event(0x0001, 0, 0, 0, 0) 
-
-app.include_router(process_router)
+for router in routers:
+    app.include_router(router)
 
 
 if __name__ == "__main__":
-    import uvicorn
-    kernel32 = ctypes.windll.kernel32
-    kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
-
     uvicorn.run(f"{os.path.splitext(os.path.basename(__file__))[0]}:app", host="0.0.0.0", port=5041, reload=True)
