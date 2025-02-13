@@ -45,7 +45,7 @@ def get_exec_names():
     return JSONResponse(content=[k for k in EXECS.keys()])
 
 @router.get("/processes", response_model=list[Task])
-def get_tasks():
+def get_running_procesess():
     return JSONResponse(content=[Task(**process.model_dump()).model_dump() for process in processes.values()])
 
 
