@@ -14,11 +14,11 @@ def shutdown():
 @router.get("/monitors/off")
 def sleep_monitors():
     ctypes.windll.user32.PostMessageW(0xFFFF, 0x0112, 0xF170, 2)
- 
+
 
 @router.get("/monitors/on")
 def wake_monitors():
-    ctypes.windll.user32.mouse_event(0x0001, 0, 0, 0, 0) 
+    ctypes.windll.user32.mouse_event(0x0001, 0, 0, 0, 0)
 
 def force_terminal_color():
     kernel32 = ctypes.windll.kernel32
