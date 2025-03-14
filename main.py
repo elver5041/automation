@@ -5,12 +5,11 @@ from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 from routers.process_router  import router as process_router , check_loading_processes
-from routers.hardware_router import router as hardware_router
-
+from routers.hardware_router import router as hardware_router, force_terminal_color
 
 ROUTERS = [hardware_router, process_router]
 CALLABLE_TASKS = [check_loading_processes]
@@ -51,6 +50,7 @@ for router in ROUTERS:
 
 
 if __name__ == "__main__":
+    force_terminal_color()
     uvicorn.run(app=f"{os.path.splitext(os.path.basename(__file__))[0]}:app",
                 host="0.0.0.0",
                 port=5041,

@@ -11,24 +11,32 @@ from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse, RedirectResponse
 
 from utils import get_ip
-from models import Process, Task, Status
+from models import Process, Task, Status, Executable
 
 
 processes: dict[str,Process] = {}
 loading_processes: list[str] = []
 callable_tasks:list[Callable[[], None]]= []
 
-EXECS: dict[str,tuple[str,str,int|None]] = {
-    "text ai":(r"D:\ai\kobold\KoboldAI-Client","play.bat", 5000),
-    "image ai":(r"D:\ai\sd.webui","automate.bat", 7860), 
-    "elverbot":(r"C:\Users\joe20\Desktop\elverbot","run.bat"),
+EXECS: dict[str,Executable] = {
+    "comfyUI":      Executable(port=8188, route=r"D:\ai\ComfyUI_windows_portable", exec="automate.bat"),
+    "automatic111": Executable(port=7860, route=r"D:\ai\sd.webui",exec="automate.bat"), 
+    "koboldAi":     Executable(port=5000, route=r"D:\ai\kobold\KoboldAI-Client",exec="play.bat"),
+    "elverbot":     Executable(port=None, route=r"C:\Users\joe20\Desktop\elverbot",exec="run.bat"),
 }
 
-EXECS = {key: value + (None,) * (3 - len(value)) for key, value in EXECS.items()}
+
+
+EXECS: dict[str,tuple[str,str,int|None]] = {
+    "comfyUI": (r"D:\ai\ComfyUI_windows_portable", "automate.bat", 8188),
+    "automatic111":(r"D:\ai\sd.webui","automate.bat", 7860), 
+    "koboldAi":(r"D:\ai\kobold\KoboldAI-Client","play.bat", 5000),
+    "elverbot":(r"C:\Users\joe20\Desktop\elverbot","run.bat", None),
+}
 
 
 async def check_loading_processes() -> None:
-    for process_name in loading_processes.copy():
+    for process_name in list(loading_processes):
         pro = processes[process_name]
         try:
             response = requests.get(f"http://{get_ip()}:{pro.port}", timeout=1)
@@ -46,10 +54,17 @@ def get_exec_names():
 
 @router.get("/processes", response_model=list[Task])
 def get_running_procesess():
-    return JSONResponse(content=[process for process in processes.values()])
+    return JSONResponse(content=[process.to_task().model_dump() for process in processes.values()])
 
 
-@router.post("/open/{name}")
+@router.delete("/processes")
+def kill_all_processes():
+    global processes
+    processes = {}
+
+
+
+@router.post("/processes/{name}")
 async def open_process(name:str):
     if name in processes:
         raise HTTPException(status_code=400, detail=f"Process {name} is already running")
@@ -63,15 +78,16 @@ async def open_process(name:str):
         await asyncio.sleep(1)
         children = parent_process.children(recursive=True)
         pids = [c.pid for c in children]
-        status = Status.LOADING if EXECS[name][2] else Status.RUNNING
+        status = Status.LOADING if EXECS.get(name)[2] else Status.RUNNING
         processes[name] = Process(name = name,  port = port, pids = pids, status = status)
         if status == Status.LOADING:
             loading_processes.append(name)
-        return JSONResponse(content={"status": "success", "message": f"Started {name}"})
+        return JSONResponse(content={"status": "success", 
+                                     "message": f"Started {name}"})
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.delete("/close/{name}")
+@router.delete("/processes/{name}")
 def kill_process(name: str):
     process = processes.get(name)
     if not process:
@@ -91,7 +107,18 @@ def kill_process(name: str):
     return JSONResponse(content={"status": "success", 
                                  "message": f"Killed process {name} with PID {pid}"})
 
-@router.get("/redirect/{name}")
+
+@router.get("/processes/{name}", response_model=Task)
+def get_process(name: str):
+    if proc := processes.get(name):
+        return JSONResponse(content=proc.to_task().model_dump())
+    elif task := EXECS.get(name):
+        return JSONResponse(content=Task(name=name, port=task[2], status=Status.CLOSED).model_dump())
+    else:
+        return HTTPException(status_code=404, detail="no task with that name")
+
+
+@router.get("/processes/{name}/redirect")
 def redirect_to(name: str):
     process = processes.get(name)
     if not process:

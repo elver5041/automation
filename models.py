@@ -25,8 +25,16 @@ class Task(BaseSchema):
             values['status'] = status.value
         return values
 
+class Executable(BaseModel):
+    route: str
+    exec: str
+    port: Optional[int]
+    
 class Process(BaseModel):
     name:str
     port: Optional[int]
     pids: list[int]
     status: Status
+
+    def to_task(self) -> Task:
+        return Task(**self.model_dump())
