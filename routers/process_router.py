@@ -45,16 +45,13 @@ router = APIRouter(tags=["tasks"])
 connections: list[WebSocket] = []
 
 async def notify_clients(status:Status, name):
-    """Push the current process list to all connected clients."""
     payload = {"name":name, "status":status.value}
     for ws in connections:
         try:
             await ws.send_text(json.dumps(payload))
             print("sent"+json.dumps(payload))
-        except Exception as e:
-            # client disconnected or failed
+        except Exception:
             connections.remove(ws)
-
 
 @router.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):
@@ -62,7 +59,7 @@ async def websocket_endpoint(ws: WebSocket):
     connections.append(ws)
     try:
         while True:
-            await ws.receive_text()  # keep connection alive (ignore client msgs)
+            await ws.receive_text() 
     except WebSocketDisconnect:
         connections.remove(ws)
 

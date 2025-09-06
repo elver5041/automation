@@ -10,11 +10,9 @@ def shutdown():
     os.system("shutdown /s /t 0")
     return "computer shut down sucesssfully"
 
-
 @router.get("/monitors/off")
 def sleep_monitors():
     ctypes.windll.user32.PostMessageW(0xFFFF, 0x0112, 0xF170, 2)
-
 
 @router.get("/monitors/on")
 def wake_monitors():

@@ -7,7 +7,6 @@ router = APIRouter(tags=["file_browser"])
 
 @router.get("/list")
 def list_files(path: str = ""):
-    # Accept absolute or relative paths
     target = Path(path).expanduser().resolve()
 
     if not target.exists() or not target.is_dir():
@@ -22,7 +21,6 @@ def list_files(path: str = ""):
                     "is_dir": p.is_dir()
                 })
             except PermissionError:
-                # Skip entries we can’t access
                 continue
     except PermissionError:
         return {"error": f"Access denied: {str(target)}"}
