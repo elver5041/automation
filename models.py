@@ -4,14 +4,13 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict, model_validator
 
 class Status(Enum):
-    CLOSED  = "Closed"
-    LOADING = "Loading"
-    RUNNING = "Running"
-    SERVED  = "Served"
+    CLOSED  = "closed"
+    LOADING = "loading"
+    RUNNING = "running"
+    SERVED  = "served"
 
 class BaseSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-
 
 class Task(BaseSchema):
     name: str
@@ -27,11 +26,11 @@ class Task(BaseSchema):
 
 class Executable(BaseModel):
     route: str
-    exec: str
+    exe: str
     port: Optional[int]
-    
+
 class Process(BaseModel):
-    name:str
+    name: str
     port: Optional[int]
     pids: list[int]
     status: Status

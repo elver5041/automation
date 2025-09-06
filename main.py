@@ -10,8 +10,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from routers.process_router  import router as process_router , check_loading_processes
 from routers.hardware_router import router as hardware_router, force_terminal_color
+from routers.subdir_router import router as subdir_router
 
-ROUTERS = [hardware_router, process_router]
+ROUTERS = [hardware_router, process_router, subdir_router]
 CALLABLE_TASKS = [check_loading_processes]
 
 
